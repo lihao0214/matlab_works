@@ -1,0 +1,65 @@
+function []=ica_signal(s,Len,R),
+x=[];
+Iters=R*floor(Len/R);
+for m=1:R:Iters,
+    x=[x,s(m:m+R-1)'];
+end
+[nic,L]=size(x);
+
+d=eye(nic);
+pv=zeros(nic);
+for m=1:1:nic,
+    w=d(:,m);
+    for k=1:1:32,
+        w=cor*w;
+        w=w-pv*(pv'*w);
+        w=w/max(eps,norm(w));
+    end
+    pv(:,m)=w;
+end
+C=cor*pv;
+D=diag((sum(abs(C),1)./max(sum(abs(pv),1),eps)).^-0.5);
+Rw=D*pv';%D^-0.5*[v1';v2']
+z=Rw*x;
+
+b=eye(nic);
+for k=1:1:64,
+    %     for n=1:1:nic,
+    %         w=b(:,n);
+    %         p=z*g(w,z)'/L;
+    %         q=f(w,z)*ones(L,1)/L;
+    %         w=p-q*w;
+    %         b(:,n)=w;
+    %     end
+    p=z*G(b,z)'/L;
+    q=F(b,z)*ones(L,nic)/L;
+    b=p-b*diag(diag(q));%[v1,v2]*[d1,0;0,d2]=[d1*v1,d2*v2]
+    [v,D]=eig(b'*b);
+    rW=v*D^-0.5*v';%(b'*b)^-1/2*(b'*b)*(b'*b)^-1/2=I
+    b=b*rW;
+end
+W=b';
+
+% b=zeros(nic);%(R=WV)A=PD,R=P*D*inv(A),inv(R)=A*D^-1*P=[h1,h2]*[1/d1,0;0,1/d2]*P=[h1/d1,h2/d2]*P,y=P*D*[s1;s2],inv(R)*(y=P*[d1*s1;d2*s2])=A*s
+% for m=1:1:nic,
+%     wold=zeros(nic,1);
+%     w=d(:,m);
+%     for k=1:1:32,
+%         p=z*g(w,z).'/L-r(w,z,L)*w;
+%         q=f(w,z)*ones(L,1)/L-r(w,z,L);
+%         %p=(w'*z).^3;
+%         %w=z*p'/L-3*w;
+%         %p=z*g(w,z).'/L;
+%         %q=f(w,z)*ones(L,1)/L;
+%         %w=p-q*w;
+%         w=w-p/max(eps,q);
+%         w=w-b*(b'*w);
+%         w=w/max(eps,norm(w));
+%     end
+%     b(:,m)=w;
+% end
+% W=b';
+V=W*Rw;
+P=inv(V);
+
+end

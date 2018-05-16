@@ -1,0 +1,1 @@
+std_amrdec.exe test.out speaker.pcm

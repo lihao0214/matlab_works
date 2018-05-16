@@ -1,0 +1,266 @@
+clc;
+clear;
+close;
+addpath('./CHINESE(MANDARIN)');
+%%
+[nearEnds,fs]=wavread('Ch_f5');
+nearEnds=resample(nearEnds,1,2);
+%%
+% fid=fopen('echo004.pcm','rb'); % near_ends
+% nearEnds=fread(fid,'short');
+fs=8000;
+% nearEnds=nearEnds/32768;
+% fclose(fid);
+%%
+% nearEnds=cos(2*pi*3300*[0:1:65535]'/fs);
+N=256;
+L=256;
+R=48;
+Rs=L/4;
+Hopratio=Rs/R;
+windows=(1-cos(2*pi*[0:1:L-1]'/L))/2;
+DC=sum(windows.^2,1)/Rs;
+Iter=R*floor(length(nearEnds)/R);
+workbuff=zeros(L,1);
+outputs=zeros(floor(Hopratio*(Iter+R-1)),1);
+
+fid=fopen('test_p1r','rb');
+Sr=fread(fid,'int32');
+fclose(fid);
+sid=fopen('test_p1i','rb');
+Si=fread(sid,'int32');
+fclose(sid);
+S=Sr+j*Si;
+K=3;
+C=K;
+cntr=0;
+wins=[windows(end-Rs+1:end);zeros(3*Rs,1)].^2;%h(n+3*Rs)
+wins=wins+[windows(end-2*Rs+1:end);zeros(2*Rs,1)].^2;%h(n+2*Rs)
+wins=wins+[windows(end-3*Rs+1:end);zeros(Rs,1)].^2;%h(n+Rs)
+wins=wins/DC;
+[out,olag,oxcr]=pvsola(nearEnds,Rs/R,3,L,Rs);
+flagreset=1;
+s1=1;
+s2=L;
+x1=1+2*L;%+1
+x2=1+2*L+4*Rs;%+1
+p1=1;
+p2=L;
+sgn=1;
+acc=0;
+dbg=[];
+dbl=[];
+lf=nearEnds(p1:p2);%current
+rf=nearEnds(p1+R:p2+R);%next
+D=0;
+fftlf=fft(circshift(lf.*windows,D),N);
+fftrf=fft(circshift(rf.*windows,D),N);
+alf=abs(fftlf(1:1+N/2));
+arf=abs(fftrf(1:1+N/2));
+plf=phase(fftlf(1:1+N/2));
+prf=phase(fftrf(1:1+N/2));
+phi=plf;
+dphi=(prf-plf)-2*pi*R*[0:1:N/2]'/N;%real_diff-ideal_diff
+dphi=dphi-round(dphi/2/pi)*2*pi;%unwrapping
+dphi=dphi*Hopratio+2*pi*Rs*[0:1:N/2]'/N;%
+%dphi=prf-plf;
+pos=1;
+delta=0;
+d=0;
+%t:(Rs/R)*t,delay=(Rs/R-1)*t
+
+while(p2+R<length(nearEnds)),
+    if((mod(cntr,C)==0)&&(s1>2*Rs)),
+        plf=prf;
+        alf=arf;
+        rf=nearEnds(p1+2*R:p2+2*R);
+        fftrf=fft(circshift(rf.*windows,D),N);
+        prf=phase(fftrf(1:1+N/2));
+        dphi=(prf-plf)-2*pi*R*[0:1:N/2]'/N;
+        dphi=dphi-round(dphi/2/pi)*2*pi;
+        dphi=dphi*Hopratio+2*pi*Rs*[0:1:N/2]'/N;
+
+        if(abs(acc)>2*Rs),
+            d=-sign(acc)*2*Rs;
+            q=-sign(acc)*2;
+            acc=acc-sign(acc)*2*Rs;
+        elseif(abs(acc)>Rs),
+            d=-sign(acc)*1*Rs;
+            q=-sign(acc)*1;
+            acc=acc-sign(acc)*1*Rs;
+        else
+            d=0;
+            q=0;
+        end
+
+        t1=s1;%tc
+        t2=s2;
+        for k=1:1:8,%tF>=tc+L+T+Rs=tc+(4+2+1)=tc+7*Rs,[tc:tF]
+            temp=alf.*exp(j*phi);
+            frame=circshift(real(ifft([temp;conj(temp(N/2:-1:2))],N)),D);
+            phi=phi+dphi;
+            outputs(t1:t2)=outputs(t1:t2)+frame.*windows/DC;
+            t1=t1+Rs;
+            t2=t2+Rs;
+        end
+        p1=round(pos);%lf
+        p2=p1+L-1;
+        lf=nearEnds(p1:p2);
+        fftlf=fft(circshift(lf.*windows,D),N);
+        alf=abs(fftlf(1:1+N/2));
+        plf=phase(fftlf(1:1+N/2));
+        rf=nearEnds(p1+R:p2+R);
+        fftrf=fft(circshift(rf.*windows,D),N);
+        arf=abs(fftrf(1:1+N/2));
+        prf=phase(fftrf(1:1+N/2));
+        dphi=(prf-plf)-2*pi*R*[0:1:N/2]'/N;
+        dphi=dphi-round(dphi/2/pi)*2*pi;
+        dphi=dphi*Hopratio+2*pi*Rs*[0:1:N/2]'/N;
+
+        xcr=xcorr(outputs(s1-2*Rs:s1+L+2*Rs),lf.*windows.^2);%2*L+1
+        [var,indx]=max(abs(xcr(x1:x2)),[],1);
+        delta=indx-2*Rs-1;
+        s1=round(s1+delta);%s1/Hopratio
+        phi=plf;
+        flagreset=1;
+        %pos=p1+delta/Hopratio;
+        pos=s1/Hopratio;
+        acc=acc+delta;
+        s2=s1+L-1;
+        cntr=0;
+    elseif(p1>R),%[p1:p2],lf-indices
+        p1=p1+R;%current
+        p2=p1+L-1;
+        lf=rf;%
+        fftlf=fftrf;%
+        plf=prf;%
+        alf=arf;%
+        rf=nearEnds(p1+R:p2+R);
+        fftrf=fft(circshift(rf.*windows,D),N);
+        prf=phase(fftrf(1:1+N/2));
+        arf=abs(fftrf(1:1+N/2));
+        dphi=(prf-plf)-2*pi*R*[0:1:N/2]'/N;%current_phase-target_phase
+        dphi=dphi-round(dphi/2/pi)*2*pi;%unwrapping
+        dphi=dphi*Hopratio+2*pi*Rs*[0:1:N/2]'/N;%*(Rs/R)+ideal_diff
+    end
+
+    if(flagreset==0),
+        temp=alf.*exp(j*phi);
+        frame=circshift(real(ifft([temp;conj(temp(N/2:-1:2))],N)),D);
+        %tmpN=-temp(1:N/2-1)+temp(2:N/2)-temp(3:1+N/2);
+        %phi=phase([temp(1);tmpN;temp(1+N/2)]);
+    else
+        flagreset=0;
+        outputs(s1:s2)=outputs(s1:s2).*wins;%(tc+delta)
+        outputs(s2+1:s2+3*L)=0;
+        frame=sgn*lf.*windows;
+    end
+    outputs(s1:s2)=outputs(s1:s2)+frame.*windows/DC;
+    phi=phi+dphi;
+    s1=s1+Rs;
+    s2=s2+Rs;
+    cntr=cntr+1;
+    pos=pos+R;
+    %p1=p1+R;
+    %p2=p1+L-1;
+end
+
+% fid=fopen('test_pattern','rb');
+% outputs=fread(fid,'short');
+% fclose(fid);
+
+dbg=[];
+outputs=resample(outputs,2,1);
+M=128;
+Rs=2*Rs;
+wins=hann(M);
+buffer=zeros(M+Rs,1);
+Iters=Rs*floor(length(outputs)/Rs);
+pos=0;
+pout=zeros(floor((Iters+Rs-1)*R/Rs),1);
+for m=1:Rs:Iters,
+    x=outputs(m:m+Rs-1);
+    buffer=[buffer(end-M+1:end);x];
+    pos=0;
+    inx=floor(m/Rs);
+    for k=1:1:R,
+        idx=floor(pos);
+        frac=pos-idx;
+        h=(R/Rs)*sinc((frac+[M/2:-1:-M/2+1]')*R/Rs);
+        s=1+M/2+idx;
+        t=buffer(s-M/2:s+M/2-1);
+        pout(inx*R+k)=h'*t;
+        pos=(pos*R+Rs)/R;
+    end
+end
+
+while(pos<length(nearEnds)),
+    if((mod(cntr,C)==0)&&(s1>2*Rs)),
+        rf=nearEnds(p1+Rs:p2+Rs);
+        fftrf=fft(rf.*windows,N);
+        prf=phase(fftrf(1:1+N/2));
+        dphi=prf-plf;
+        t1=s1;
+        t2=s2;
+        for k=1:1:8,
+            temp=alf.*exp(j*phi);
+            frame=real(ifft([temp;conj(temp(N/2:-1:2))],N));
+            phi=phi+dphi;
+            outputs(t1:t2)=outputs(t1:t2)+frame.*windows/DC;
+            t1=t1+Rs;
+            t2=t2+Rs;
+        end
+        p1=round(pos);%uc
+        p2=p1+L-1;
+        lf=nearEnds(p1:p2);
+        fftlf=fft(lf.*windows,N);
+        alf=abs(fftlf(1:1+N/2));
+        plf=phase(fftlf(1:1+N/2));
+
+        rf=nearEnds(p1+Rs:p2+Rs);
+        fftrf=fft(rf.*windows,N);
+        arf=abs(fftrf(1:1+N/2));
+        prf=phase(fftrf(1:1+N/2));
+        dphi=prf-plf;
+        xcr=xcorr(outputs(s1-2*Rs:s1+L+2*Rs),lf(1:3*Rs).*windows(1:3*Rs).^2);%L+L=2L
+        [var,indx]=max(abs(xcr(x1:x2)),[],1);
+        delta=indx-2*Rs-1;%delta
+        s1=round(s1+delta);
+        s2=s1+L-1;
+        pos=p1+delta/Hopratio;
+        %sgn=sign(xcr(indx+x1-1));
+        phi=plf;
+        flagreset=1;
+        cntr=0;
+    elseif(pos>=p1+Rs),
+        p1=p1+Rs;
+        p2=p2+Rs;
+        fftlf=fftrf;
+        alf=arf;
+        plf=prf;
+        lf=rf;
+        rf=nearEnds(p1+Rs:p2+Rs);
+        fftrf=fft(rf.*windows,N);
+        arf=abs(fftrf(1:1+N/2));
+        prf=phase(fftrf(1:1+N/2));
+        dphi=prf-plf;
+    else
+        %%
+    end
+
+    if(flagreset==0),
+        temp=alf.*exp(j*phi);%synthesis
+        frame=real(ifft([temp;conj(temp(N/2:-1:2))],N));
+    else
+        flagreset=0;
+        frame=sgn*lf.*windows;
+        outputs(s1:s2)=outputs(s1:s2).*wins;
+        outputs(s2+1:s2+3*L)=0;
+    end
+    cntr=cntr+1;
+    phi=phi+dphi;
+    outputs(s1:s2)=outputs(s1:s2)+frame.*windows/DC;
+    pos=pos+R;
+    s1=s1+Rs;
+    s2=s2+Rs;
+end
