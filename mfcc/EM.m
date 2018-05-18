@@ -153,4 +153,3 @@ while 1
     loglik_old = loglik;
     nbStep = nbStep+1;
 end
-hold;
