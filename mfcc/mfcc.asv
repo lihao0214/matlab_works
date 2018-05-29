@@ -158,13 +158,13 @@ H = trifbank( M, K, R, fs, hz2mel, mel2hz ); % size of H is M x K
 
 % Filterbank application to unique part of the magnitude spectrum
 FBE = H * MAG(1:K,:);
-%FBE(FBE<1.0*5e-2)=1.0*5e-2; % apply mel floor
+FBE(FBE<1.0*5e-2)=1.0*5e-2; % apply mel floor
 
 % DCT matrix computation
 DCT = dctm( N, M );
 
 % Conversion of logFBEs to cepstral coefficients through DCT
-fbes=0.5*log10(FBE);
+fbes=log10(FBE);
 CC = DCT * fbes;
 
 % Cepstral lifter computation

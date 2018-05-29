@@ -20,15 +20,17 @@ Fs=8000;
 LF=300;
 HF=3700;
 %%
-[speech,fs]=wavread('Ch_m1');
-speech=resample(speech,Fs,fs);
-vadout=apply_vad(speech,0.1,20);
-[MFCCs,FBEs,frames]=mfcc(speech,Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
-VadFlag=vadout(1:min(length(MFCCs),length(vadout)));
-index=find(VadFlag~=0);
-MFCCs=MFCCs(2:end,index)-repmat(mean(MFCCs(2:end,index),2),1,size(MFCCs(2:end,index),2));
-MFCCs=MFCCs./repmat(std(MFCCs,1,2),1,size(MFCCs,2));
-[fbes,W]=ica_signal(MFCCs,C,1);
+% [speech,fs]=wavread('Capture');
+% speech=resample(speech(1:160000,1),Fs,fs);
+% vadout=apply_vad(speech,0.1,20);
+% [MFCCs,FBEs,frames]=mfcc(speech,Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
+% VadFlag=vadout(1:min(length(MFCCs),length(vadout)));
+% index=find(VadFlag~=0);
+fid=fopen('mfccs','rb');
+MFCCs=fread(fid,'double');
+fclose(fid);
+MFCCs=reshape(MFCCs,13,2048);
+[fbes,W]=ica_signal(MFCCs(2:C+1,:),C,1);
 [Priors,Mu,Sigma]=EM_init_kmeans(fbes,K);
 [Priors,Mu,Sigma]=EM(fbes,Priors,Mu,Sigma);
 %%
@@ -59,8 +61,9 @@ MFCCs2=MFCCs2./repmat(std(MFCCs2,1,2),1,size(MFCCs2,2));
 %Test-Phase
 [speech3,fs]=wavread('Ch_m1');
 speech3=resample(speech3,Fs,fs);
-ISM_RIR_bank(my_ISM_setup_ii,'ISM_RIRs_ii.mat');
-AuData_s1=ISM_AudioData('ISM_RIRs_ii.mat',speech3);
+speech3=awgn(speech3,30,'measured');
+ISM_RIR_bank(my_ISM_setup_iv,'ISM_RIRs_iv.mat');
+AuData_s1=ISM_AudioData('ISM_RIRs_iv.mat',speech3);
 vadout=apply_vad(AuData_s1(:,1),0.1,20);
 [MFCCs3,FBEs3,frames3]=mfcc(AuData_s1(:,1),Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
 VadFlag=vadout(1:min(length(MFCCs3),length(vadout)));
@@ -81,8 +84,12 @@ for m=1:1:K,
     P(:,m,3)=Priors2(m)*gaussPDF(fbes5,Mu2(:,m),Sigma2(:,:,m));
 end
 p=zeros(size(MFCCs3,2),3);
+p(1,1)=log(sum(P(1,:,1),2));
+p(1,2)=log(sum(P(1,:,2),2));
+p(1,3)=log(sum(P(1,:,3),2));
 for k=2:1:size(MFCCs3,2),
     p(k,1)=p(k-1,1)+log(sum(P(k,:,1),2));
     p(k,2)=p(k-1,2)+log(sum(P(k,:,2),2));
     p(k,3)=p(k-1,3)+log(sum(P(k,:,3),2));
 end
+p=p/length(p);

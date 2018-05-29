@@ -30,7 +30,7 @@ for i=1:nbStates
     idtmp = find(Data_id==i);
     Priors(i) = length(idtmp);
     %Sigma(:,:,i) = cov([Data(:,idtmp) Data(:,idtmp)]');
-    Sigma(:,:,i)=diag(sum((Data(:,idtmp).^2-repmat(Mu(:,i).^2,1,length(idtmp))),2)/length(idtmp));
+    Sigma(:,:,i)=(Data(:,idtmp).^2-repmat(Mu(:,i).^2,1,length(idtmp)))/length(idtmp);
     %Add a tiny variance to avoid numerical instability
     Sigma(:,:,i) = Sigma(:,:,i) + 1E-5.*diag(ones(nbVar,1));
 end

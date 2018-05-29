@@ -10,8 +10,6 @@ F=@(W,z) 3*(W'*z).^2;
 [nic,L]=size(x);%#1:nch,#2:length
 u=mean(x,2);
 x=x-repmat(u,1,L);
-s=sqrt(sum(x.^2,2)/L);
-x=x./repmat(s,1,L);
 cor=x*x'/L;
 d=eye(nic);
 pv=zeros(nic);
@@ -60,7 +58,7 @@ if(flag~=0),
         q=F(b,z)*ones(L,1)/L;%E[g'(w'*z)],g'(W'*z)*ones(L,1)/L=[a1,...,aN,b1,...,bN]*[1;...;1]
         b=p-b*diag(q);%[v1,v2]*[d1,0;0,d2]=[d1*v1,d2*v2],D*[v1';v2']=[d1,0;0,d2]*[v1';v2']=[d1*v1';d2*v2']
         [v,dd]=eig(b'*b);
-        rW=v*diag(diag(dd).^-0.5)*v';%(b'*b)^-1/2*(b'*b)*(b'*b)^-1/2=I
+        rW=v*diag(max(diag(dd),eps).^-0.5)*v';%(b'*b)^-1/2*(b'*b)*(b'*b)^-1/2=I
         b=b*rW;
         Errs(k,1)=norm(abs(b'*a)-eye(nic),'fro');
         a=b;

@@ -133,8 +133,9 @@ while 1
         %         end
         %Sigma(:,:,i) = covtmp / E(i);
         %covtmp=Data.^2*Pix(:,i)/E(i)-Mu(:,i).^2;
-        covtmp=(Data.^2-repmat(Mu(:,i).^2,1,nbData))*Pix(:,i)/E(i);
-        Sigma(:,:,i)=diag(max(covtmp,1E-5));
+        covtmp=(Data.^2-repMu(:,i).^2
+        Sigma(:,:,i)=diag(covtmp);
+        Sigma(:,:,i)=Sigma(:,:,i)+1E-5.*diag(ones(nbVar,1));
     end
     %% Stopping criterion %%%%%%%%%%%%%%%%%%%%
     for i=1:nbStates
