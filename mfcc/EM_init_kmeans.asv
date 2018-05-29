@@ -49,7 +49,7 @@ end
 covs=covs./repmat(counts,nbVar,1);
 covs=covs-Mu.^2;
 for k=1:1:nbStates,
-    Sigma(:,:,k)=diag(max(covs(:,k),1e-5));
+    Sigma(:,:,)=diag(max(covs(:,k),1e-5))
 end
 
 %Mu = Centers';
@@ -61,3 +61,5 @@ end
 %     Sigma(:,:,i) = Sigma(:,:,i) + 1E-5.*diag(ones(nbVar,1));
 % end
 % Priors = Priors ./ sum(Priors);
+
+

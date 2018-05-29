@@ -132,9 +132,9 @@ while 1
         %             covtmp = covtmp + (Data(:,j)-Mu(:,i))*(Data(:,j)-Mu(:,i))'.*Pix(j,i);
         %         end
         %Sigma(:,:,i) = covtmp / E(i);
-        covtmp=Data.^2*Pix(:,i)/E(i)-Mu(:,i).^2;
-        Sigma(:,:,i)=diag(covtmp);
-        Sigma(:,:,i)=Sigma(:,:,i)+1E-5.*diag(ones(nbVar,1));
+        covtmp=(Data.^2-repmat(Mu(:,i),1,nbData).^2)*Pix(:,i)/E(i);%(Data-repmat(Mu(:,i),1,nbData))=[p1,p2,...,pN]*[p1';p2';...;pN']
+        Sigma(:,:,i)=diag(covtmp);%p1*p1'+...+pN*pN',p(x|z)=p(x,z)/p(z)=p(x)*p(z|x)/p(z),pix
+        Sigma(:,:,i)=Sigma(:,:,i)+1E-5.*diag(ones(nbVar,1));%[p1,p2,...pN]*pix/E
     end
     %% Stopping criterion %%%%%%%%%%%%%%%%%%%%
     for i=1:nbStates
@@ -146,7 +146,7 @@ while 1
     %F(find(F<realmin))=realmin;
     loglik = mean(log(F));
     %Stop the process depending on the increase of the log likelihood
-    err=[err;abs((loglik/loglik_old)-1)];
+    err=[err;loglik];
     if abs((loglik/loglik_old)-1) < loglik_threshold
         break;
     end

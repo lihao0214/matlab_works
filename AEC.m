@@ -88,7 +88,7 @@ fclose(fid2);
 % s=[[a1;a1],[a2;a2]];
 % f=[s2;s2];
 
-s=wavread('Capture.wav');
+s=wavread('Capture_1.wav');
 % s=[s;s;s;s;s;s];
 % Tw=30;
 % Ts=10;
@@ -394,7 +394,7 @@ for m=1:R:Iters,
             zf(:,:,k)=pxh(:,:,k)*ica_inputs(:,:,k);
             u=pinv(wxh(:,:,k)+eps*eye(2));
             u=pxh(:,:,k)*u;
-            mf(k,:)=1./(1+exp(40*(angle(u(:,1)'*zf(:,:,k))-0.15*pi)));
+            mf(k,:)=1./(1+exp(20*(angle(u(:,1)'*zf(:,:,k))-pi/3)));
             ym(:,:,k)=wxh(:,:,k)*ica_inputs(:,:,k);%org/sources
             ym4(:,k)=mean(abs(ym(:,:,k)).^4,2);%2*L3,E[|ym(:,1:L3)|.^4]
             ym2(:,k)=mean(abs(ym(:,:,k)).^2,2);%E[|ym(:,1:L3)|.^2]
@@ -578,17 +578,19 @@ for m=1:R:Iters,
         end
         buffer_mxd(:,:,k)=[buffer_mxd(:,2:L3,k),x];
         y=wxh(:,:,k)*x;
+        [v,D]=eig(wxh(:,:,k)*wxh(:,:,k)');
+        r=diag(sqrt(diag(v*diag(max(diag(D),eps).^-1)*v')))*wxh(:,:,k)*x;
         u=pinv(wxh(:,:,k)+eps*eye(2));
         nn=u(:,2)*y(2);
         ss=u(:,1)*y(1);
         p=nxh(:,:,k)*u(:,1);
         q=nxh(:,:,k)*x;
-        mk=1./(1+exp(40*(angle(p'*q)-0.25*pi)));
+        mk=1./(1+exp(20*(angle(p'*q)-pi/3)));
         %Yk(k,:)=[x(1),nn(1)];
         %Yk(k,:)=[ss(1),nn(1)];
         %Yk(k,:)=reshape(pref(:,1+cntr,k),1,2);
-        %Yk(k,:)=[y(1),y(2)];%[s1;s2]*[s1;s2]'=I
-        Yk(k,:)=[ss(1),ss(2)]*mk;
+        Yk(k,:)=[r(1),r(2)];%[s1;s2]*[s1;s2]'=I
+        %Yk(k,:)=reshape(ss*mk,1,2);
         Pk(k,:)=[x(2),nn(2)];
     end
     %Sxy=(1-1/64)*Sxy+1/64*diag(Yk(:,2)*Yk(:,1)');
@@ -611,7 +613,7 @@ for m=1:R:Iters,
     for k=2:K/2,
         Fk(k,1)=[0.5,0.5]*[Vk(k,1);Vk(k,2)];
     end
-    zc1(1:1+K/2)=[zeros(20,1);Yk(21:K/2,1);0];
+    zc1(1:1+K/2)=[zeros(20,1);Vk(21:K/2,1);0];
     zc1(2+K/2:K)=conj(zc1(K/2:-1:2));
     zc2(1:1+K/2)=[zeros(20,1);Yk(21:K/2,2);0];
     zc2(2+K/2:K)=conj(zc2(K/2:-1:2));
