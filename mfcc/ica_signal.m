@@ -30,45 +30,45 @@ eigen=sum(abs(C),1)./max(sum(abs(pv),1),eps);
 eigen=eigen(:,order);
 pv=pv(:,order);
 if(flag~=0),
-    Iters=64;
+    Iters=128;
     D=diag(eigen(:,1:N).^-0.5);
     Rw=D*pv(:,1:N)';
     z=Rw*x;%whitening
     [nic,L]=size(z);
-    Errs=zeros(Iters,nic);
-    %Errs=zeros(Iters,1);
+    %Errs=zeros(Iters,nic);
+    Errs=zeros(Iters,1);
     b=eye(nic);
     a=zeros(nic);
     W=zeros(nic);
-    for n=1:1:nic,
-        w=d(:,n);
-        for k=1:1:Iters,
-            c=(w'*z)*g(w,z)'/L;
-            p=z*g(w,z)'/L;
-            q=f(w,z)*ones(L,1)/L;
-            w=w-0.01*(p-c*w)/(q-c);
-            w=w-W*(W'*w);
-            w=w/max(eps,norm(w));
-            Errs(k,n)=norm(abs(w'*a(:,n))-1);
-            a(:,n)=w;
-        end
-        W(:,n)=w;
-    end
-    W=W';
-
-    %     for k=1:1:Iters,
-    %         p=z*G(b,z)'/L;%E[z*g(w'*z)]-E[g'(w'*z)]*w,p=[w1,w2],E[z*(g(w'*z))]-E[g'(w'*z)]*w
-    %         q=F(b,z)*ones(L,1)/L;%E[g'(w'*z)],g'(W'*z)*ones(L,1)/L=[a1,...,aN,b1,...,bN]*[1;...;1]
-    %         c=sum((b'*z).*F(b,z),2)/L;
-    %         b=b-0.01*(p-b*diag(c))*diag((q-c).^-1);
-    %         %b=p-b*diag(q);%[v1,v2]*[d1,0;0,d2]=[d1*v1,d2*v2],D*[v1';v2']=[d1,0;0,d2]*[v1';v2']=[d1*v1';d2*v2']
-    %         [v,dd]=eig(b'*b);
-    %         rW=v*diag(diag(dd).^-0.5)*v';%(b'*b)^-1/2*(b'*b)*(b'*b)^-1/2=I
-    %         b=b*rW;
-    %         Errs(k,1)=norm(abs(b'*a)-eye(nic),'fro');
-    %         a=b;
+    %     for n=1:1:nic,
+    %         w=d(:,n);
+    %         for k=1:1:Iters,
+    %             c=(w'*z)*g(w,z)'/L;
+    %             p=z*g(w,z)'/L;
+    %             q=f(w,z)*ones(L,1)/L;
+    %             w=w-0.01*(p-c*w)/(q-c);
+    %             w=w-W*(W'*w);
+    %             w=w/max(eps,norm(w));
+    %             Errs(k,n)=norm(abs(w'*a(:,n))-1);
+    %             a(:,n)=w;
+    %         end
+    %         W(:,n)=w;
     %     end
-    %     W=b';
+    %     W=W';
+
+    for k=1:1:Iters,
+        p=z*G(b,z)'/L;%E[z*g(w'*z)]-E[g'(w'*z)]*w,p=[w1,w2],E[z*(g(w'*z))]-E[g'(w'*z)]*w
+        q=F(b,z)*ones(L,1)/L;%E[g'(w'*z)],g'(W'*z)*ones(L,1)/L=[a1,...,aN,b1,...,bN]*[1;...;1]
+        c=sum((b'*z).*G(b,z),2)/L;
+        b=b-0.01*(p-b*diag(c))*diag((q-c).^-1);
+        %b=p-b*diag(q);%[v1,v2]*[d1,0;0,d2]=[d1*v1,d2*v2],D*[v1';v2']=[d1,0;0,d2]*[v1';v2']=[d1*v1';d2*v2']
+        [v,dd]=eig(b'*b);
+        rW=v*diag(diag(dd).^-0.5)*v';%(b'*b)^-1/2*(b'*b)*(b'*b)^-1/2=I
+        b=b*rW;
+        Errs(k,1)=norm(abs(b'*a)-eye(nic),'fro');
+        a=b;
+    end
+    W=b';
 
     % b=zeros(nic);%(R=WV)A=PD,R=P*D*inv(A),inv(R)=A*D^-1*P=[h1,h2]*[1/d1,0;0,1/d2]*P=[h1/d1,h2/d2]*P,y=P*D*[s1;s2],inv(R)*(y=P*[d1*s1;d2*s2])=A*s
     % for m=1:1:nic,
