@@ -4,12 +4,9 @@ close all;
 %%
 addpath('..');
 addpath('../CHINESE(MANDARIN)');
-<<<<<<< HEAD
-=======
 addpath('../vad');
 addpath('../vad/models');
 addpath('../vad/mfiles');
->>>>>>> 458f60b1cebb0518499c2c4ef063ce8bc126d62b
 %%
 %Training-Phase
 Tw=30;%window-length
@@ -23,11 +20,6 @@ Fs=8000;
 LF=300;
 HF=3700;
 %%
-<<<<<<< HEAD
-%[MFCCs,FBEs,frames]=mfcc(speech,Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
-MFCCs=MFCCs-repmat(mean(MFCCs,2),1,size(MFCCs,2));
-[fbes,W]=ica_signal(MFCCs(2:end,:),C,1);
-=======
 % [speech,fs]=wavread('Capture');
 % speech=resample(speech(1:160000,1),Fs,fs);
 % vadout=apply_vad(speech,0.1,20);
@@ -39,7 +31,6 @@ MFCCs=fread(fid,'double');
 fclose(fid);
 MFCCs=reshape(MFCCs,13,2048);
 [fbes,W]=ica_signal(MFCCs(2:C+1,:),C,1);
->>>>>>> 458f60b1cebb0518499c2c4ef063ce8bc126d62b
 [Priors,Mu,Sigma]=EM_init_kmeans(fbes,K);
 [Priors,Mu,Sigma]=EM(fbes,Priors,Mu,Sigma);
 %%

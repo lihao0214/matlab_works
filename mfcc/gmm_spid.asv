@@ -20,15 +20,17 @@ Fs=8000;
 LF=300;
 HF=3700;
 %%
-[speech,fs]=wavread('Capture');
-speech=resample(speech(1:160000,1),Fs,fs);
-vadout=apply_vad(speech,0.1,20);
-[MFCCs,FBEs,frames]=mfcc(speech,Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
-VadFlag=vadout(1:min(length(MFCCs),length(vadout)));
-index=find(VadFlag~=0);
-fid=fopen();
-
-[fbes,W]=ica_signal(MFCCs(2:C+1,index),C,1);
+% [speech,fs]=wavread('Capture');
+% speech=resample(speech(1:160000,1),Fs,fs);
+% vadout=apply_vad(speech,0.1,20);
+% [MFCCs,FBEs,frames]=mfcc(speech,Fs,Tw,Ts,alpha,@hamming,[LF,HF],M,C+1,L);
+% VadFlag=vadout(1:min(length(MFCCs),length(vadout)));
+% index=find(VadFlag~=0);
+% fid=fopen('mfccs','rb');
+% MFCCs=fread(fid,'double');
+% fclose(fid);
+% MFCCs=reshape(MFCCs,13,2048);
+[fbes,W]=ica_signal(MFCCs(2:C+1,:),C,1);
 [Priors,Mu,Sigma]=EM_init_kmeans(fbes,K);
 [Priors,Mu,Sigma]=EM(fbes,Priors,Mu,Sigma);
 %%
